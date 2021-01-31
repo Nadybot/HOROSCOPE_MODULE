@@ -4,3 +4,9 @@ version = "0.1.2"
 author = "Nadyita"
 bot_type = "Nadybot"
 bot_version = "^5.0.0-beta1"
+
+[requires]
+ext-Reflection = "*"
+ext-pcre = "*"
+ext-date = "*"
+ext-json = "*"
