@@ -1,2 +1,0 @@
-To get your horoscope for today by Ganesha:
-<highlight><tab><symbol>horoscope<end>

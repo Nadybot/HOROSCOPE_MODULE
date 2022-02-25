@@ -3,44 +3,37 @@
 namespace Nadybot\User\Modules;
 
 use Nadybot\Core\{
-	CommandReply,
+	Attributes as NCA,
+	CmdContext,
 	Http,
 	HttpResponse,
-	Nadybot,
+	ModuleInstance,
 };
 
+use function Safe\json_decode;
+use Safe\Exceptions\JsonException;
+
 /**
- * A command to give you your daily horoscope. Powered by Ganesha ;o)
+ * A command to give you your daily horoscope.
  *
- * @author Nadyita (RK5)
- *
- * @Instance
- *
- * Commands this controller contains:
- *	@DefineCommand(
- *		command     = 'horoscope',
- *		accessLevel = 'all',
- *		description = 'Get your daily horoscope',
- *		help        = 'horoscope.txt'
- *	)
+ * @author Nadyita (RK5) <nadyita@hodorraid.org>
  */
-class HoroscopeController {
-	/**
-	 * Name of the module.
-	 * Set automatically by module loader.
-	 */
-	public string $moduleName;
-
-	/** @Inject */
-	public Nadybot $chatBot;
-
-	/** @Inject */
+#[
+	NCA\Instance,
+	NCA\DefineCommand(
+		command:     'horoscope',
+		accessLevel: 'guest',
+		description: 'Get your daily horoscope',
+	)
+]
+class HoroscopeController extends ModuleInstance {
+	#[NCA\Inject]
 	public Http $http;
 
 	/**
 	 * The URL to the horoscope API with the zodiac as placeholder
 	 */
-	public const HOROSCOPE_API = 'http://horoscope-api.herokuapp.com/horoscope/today/%s';
+	public const HOROSCOPE_API = 'https://aztro.sameerkumar.website/?sign=%s&day=today';
 
 	/**
 	 * An array of all Zodiac names, sorted by ecliptic longitude of the first point
@@ -62,36 +55,47 @@ class HoroscopeController {
 	];
 
 	/**
-	 * The !horoscope command retrieves a horoscope depending on the user id
-	 *
-	 * @HandlesCommand("horoscope")
-	 * @Matches("/^horoscope$/i")
+	 * Retrieve a horoscope depending on your user id
 	 */
-	public function horoscopeCommand(string $message, string $channel, string $sender, CommandReply $sendto, array $args): void {
-		$userID = $this->chatBot->get_uid($sender);
-		if (!$userID) {
+	#[NCA\HandlesCommand("horoscope")]
+	public function horoscopeCommand(CmdContext $context): void {
+		$userID = $context->char->id;
+		if (!isset($userID)) {
 			return;
 		}
 		$zodiac = static::ZODIACS[$userID % 12];
 		$this->http
-				->get(sprintf(static::HOROSCOPE_API, $zodiac))
-				->withTimeout(5)
-				->withCallback([$this, "sendHoroscope"], $sendto);
+			->post(sprintf(static::HOROSCOPE_API, $zodiac))
+			->withTimeout(5)
+			->withCallback([$this, "sendHoroscope"], $context);
 	}
 
-	public function sendHoroscope(HttpResponse $response, CommandReply $sendto): void {
+	public function sendHoroscope(HttpResponse $response, CmdContext $context): void {
 		if (isset($response->error)) {
 			$msg = "There was an error getting today's horoscope: ".$response->error.". Please try again later.";
-			$sendto->reply($msg);
+			$context->reply($msg);
 			return;
 		}
-		$horoscope = new Horoscope();
-		$horoscope->fromJSON(@json_decode($response->body));
+		if (!isset($response->body)) {
+			$msg = "Today's horoscope id empty. Please try again later.";
+			$context->reply($msg);
+			return;
+		}
+		try {
+			$horoscope = new Horoscope(json_decode($response->body, true));
+		} catch (JsonException) {
+			$msg = "Today's horoscope was invalid. Please try again later.";
+			$context->reply($msg);
+			return;
+		}
 		if (!$horoscope->isValid()) {
 			$msg = 'It seems the horoscope-API we are using has changed. Please contact nadyita@hodorraid.org';
-			$sendto->reply($msg);
+			$context->reply($msg);
 			return;
 		}
-		$sendto->reply($horoscope->horoscope);
+		$context->reply(
+			$horoscope->description . "\n".
+			"Lucky number: {$horoscope->lucky_number}, lucky time: {$horoscope->lucky_time}, color: {$horoscope->color}"
+		);
 	}
 }

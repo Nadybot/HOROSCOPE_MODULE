@@ -1,13 +1,10 @@
 name = "HOROSCOPE_MODULE"
-description = "Ganesha tells your fortune"
-version = "0.1.5"
+description = "Your daily horoscope"
+version = "0.2.0"
 github = "Nadybot/HOROSCOPE_MODULE"
 author = "Nadyita"
 bot_type = "Nadybot"
-bot_version = "^5.0.0-beta1"
+bot_version = "^6.0.0-alpha.1"
 
 [requires]
-ext-Reflection = "*"
-ext-pcre = "*"
-ext-date = "*"
 ext-json = "*"
