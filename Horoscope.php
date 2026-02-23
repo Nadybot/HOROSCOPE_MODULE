@@ -1,36 +1,24 @@
 <?php declare(strict_types=1);
 
-namespace Nadybot\User\Modules;
+namespace Nadybot\User\Modules\HOROSCOPE_MODULE;
 
-use Spatie\DataTransferObject\DataTransferObject;
+use DateTimeInterface;
+use EventSauce\ObjectHydrator\PropertyCasters\CastToDateTimeImmutable;
 
-class Horoscope extends DataTransferObject {
-	/** Date in February 25, 2022 format from which this horoscope is */
-	public string $current_date;
-
-	/** The days where this zodiac is active */
-	public string $date_range;
-
-	/** Which zodiac is compatible with you */
-	public string $compatibility;
-
-	/** The horoscope text */
-	public string $description;
-
-	/** Which mood you're in */
-	public string $mood;
-
-	/** Your lucky number */
-	public string $lucky_number;
-
-	/** Your lucky time */
-	public string $lucky_time;
-
-	/** Your color */
-	public string $color;
+class Horoscope {
+	/**
+	 * @param DateTimeInterface $date      Date for which the horoscope is
+	 * @param string            $sign      The zodiac sign
+	 * @param string            $horoscope The horoscope text
+	 */
+	public function __construct(
+		#[CastToDateTimeImmutable('Y-m-d')] public DateTimeInterface $date,
+		public string $sign,
+		public string $horoscope,
+	) {
+	}
 
 	public function isValid(): bool {
-		return strlen($this->current_date) > 5
-			&& strlen($this->description) > 5;
+		return strlen($this->horoscope) > 5;
 	}
 }
